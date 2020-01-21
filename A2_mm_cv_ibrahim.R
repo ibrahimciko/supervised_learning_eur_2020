@@ -7,25 +7,24 @@ df <-na.omit(df) #omit the NA rows
 y <- as.vector(df$GROCERY_sum)   # y variable
 y <- scale(y) # scale and mean-center y
 
-X <- scale(df[,2:dim(df)[2]]) #scale and mean-center y
-X <- cbind(1,X) #add the column of 111111s to the X
+X <- scale(df[,2:dim(df)[2]]) #scale and mean-center X
+
 
 calculate_elastic_loss <- function(X,y,beta,lambda,alpha){
   #This function calculates the loss of the target function given the parameters.
   #Note that it takes X which has already the intercept term
   n <- dim(X)[1]  #number of observation
   loss <- (2*n)^-1 * t((y - X%*%beta)) %*% (y - X%*%beta) +
-    lambda * ((1-alpha)/(2* t(beta[2:length(beta)])%*%beta[2:length(beta)]) + alpha * sum(abs(beta[2:length(beta)])))
+    lambda * ((1-alpha)/(2* t(beta)%*%beta) + alpha * sum(abs(beta)))
   return(loss)
 }
 
-mm_elasticnet <- function(X,y,is_standardized = TRUE, is_bias_added = FALSE, stop_crit = 10^-8, 
+mm_elasticnet <- function(X,y,is_standardized = TRUE, stop_crit = 10^-8, 
                    max_iter = 30,alpha, lambda, err_denominator = 10^-8){
   #------------------------mm_elasticnet finds the minimum of the loss function of a elastic net regression model
   #y --------------------- dependent variable of n observation
   #X --------------------- matrix of predictors with the shape n x p 
   #is_standardized -------a boolean to check whether the predictors are already standardized, default True
-  #is_bias_added ---------a boolean to check whether the columns of 111s are in the X matrix
   #stop_crit -------------the floating value. Iteration stops if the change in the function is smaller than stop_crit
   #max_iter -------------- of iterations to be executed
   # alpha  --------------- weight of lasso component of the penalty. If 0, Ridge . IF 1, Lasso
@@ -34,16 +33,11 @@ mm_elasticnet <- function(X,y,is_standardized = TRUE, is_bias_added = FALSE, sto
   
   if (is_standardized == FALSE){
     X <- scale(X)
-  }
-  
-  if(is_bias_added == FALSE){
-    X <- cbind(1,X)
+    y <- scale(Y)
   }
   p <- dim(X)[2]        # number of parameters including the constant
   n <- dim(X)[1]        # number of observation
   ident <- diag(p)      #identity matrix of dimension p x p
-  ident_modified <- ident #modified identity matrix to not penalize the intercept coefficient
-  ident_modified[1,1] <- 0 #modified identity matrix to not penalize the intercept coefficient
   beta  <- rnorm(p,mean = 0) #initialize the beta_s randomly
   
   #calculate the starting loss!
@@ -55,20 +49,17 @@ mm_elasticnet <- function(X,y,is_standardized = TRUE, is_bias_added = FALSE, sto
     #print(sprintf("starting iteration:%s  with loss: %s", iteration + 1, round(loss,2)))
     
     # the part where we need majorization sur_matrix = D, see the notes
-    sur_matrix <- diag(1/as.vector(pmax(abs(beta),err_denominator)))
-    
-    sur_matrix[1,1] <- 0 #unpunish the intercept
+    D <- diag(1/as.vector(pmax(abs(beta),err_denominator)))
     
     #A is the quadratic part of the loss function
-    A <- n^(-1) * t(X)%*%X + lambda * (1 - alpha) * ident_modified + lambda * alpha * sur_matrix
+    A <- n^(-1) * t(X)%*%X + lambda * (1 - alpha) * ident + lambda * alpha * D
     linear <- n^-1 *t(beta) %*% t(X)%*%y # the part where beta is linear
   
     # the constant (don't penalize the intercept)!
-    c = (2*n)^-1* t(y)%*%y + 1/2 * lambda * alpha * sum(abs(beta[2:length(beta)]))
+    c = (2*n)^-1* t(y)%*%y + 1/2 * lambda * alpha * sum(abs(beta))
     
-
     surrogate_loss <- 1/2 * t(beta) %*% A %*% beta - linear + c  #surrogate loss g(x,z) in the notes
-    beta_candid <- n^-1 *  solve(A, ident,tol = 1e-19) %*% t(X) %*% y  #candidate beta,
+    beta_candid <- n^-1 *  solve(A, ident) %*% t(X) %*% y  #candidate beta,
     
     #new loss of the original loss function
     loss_new <- calculate_elastic_loss(X = X, y = y, beta = beta_candid, lambda = lambda, alpha = alpha) 
@@ -91,7 +82,9 @@ mm_elasticnet <- function(X,y,is_standardized = TRUE, is_bias_added = FALSE, sto
 
 library(glmnet)
 set.seed(12345)
-my_result <- mm_elasticnet(X = X, y = y, is_standardized = TRUE, is_bias_added = TRUE,max_iter = 30, alpha = 0.5, lambda = 1)
+my_result <- mm_elasticnet(X = X, y = y, is_standardized = TRUE,max_iter = 30, alpha = 0, lambda = 0.5)
+result <- glmnet(X, y, alpha = 0, lambda = 0.5,
+                 standardize = FALSE)   
 
 ##### K-fold cross validation
 cross_v <- function(X,y,k = 5,seed = 12345,alpha,lambda){
@@ -108,7 +101,7 @@ cross_v <- function(X,y,k = 5,seed = 12345,alpha,lambda){
     y_train <- y[-test_indices]
     X_train <- X[-test_indices,]
     fit <- mm_elasticnet(X = X_train, y = y_train, 
-                         is_standardized = TRUE, is_bias_added = TRUE,
+                         is_standardized = TRUE,
                          max_iter = 30, alpha = alpha, lambda = lambda)
     y_test_pred <- X_test %*% fit$beta #predicted y_test values
     MSE_i <- t(y_test - y_test_pred) %*% (y_test - y_test_pred)/length(y_test) #error in the test set
@@ -116,7 +109,7 @@ cross_v <- function(X,y,k = 5,seed = 12345,alpha,lambda){
   }
   return(mean(cv_err))
 }
-cv_err <- cross_v(X = X, y = y, k = 5,alpha = 0.5, lambda = 1, seed = 12345) 
+cv_err <- cross_v(X = X, y = y, k = 5,alpha = 0, lambda = 1, seed = 12345)
 
 find_best_param <- function(X,y,k = 5,alpha, lambda,seed){
   #this function takes the vector of alpha and lambda which are the hyperparameters of elasticnet
@@ -142,7 +135,10 @@ find_best_param <- function(X,y,k = 5,alpha, lambda,seed){
 }
 #result ridge
 res <- find_best_param(X = X,y = y, k = 10, alpha = c(0),
-                lambda = 10^seq(-2, 5, length = 10), seed = 12345)
+                lambda = 10^seq(-2, 6, length = 50), seed = 12345)
+
+result.cv <- cv.glmnet(X, y, alpha = 0, 
+                       lambda = 10^seq(-2, 6, length.out = 50), nfolds = 10)  
 #result lasso
 res <- find_best_param(X = X,y = y, k = 10, alpha = c(1),
                        lambda = 10^seq(-2, 5, length = 10), seed = 12345)
@@ -150,5 +146,5 @@ res <- find_best_param(X = X,y = y, k = 10, alpha = c(1),
 
 #calculating the sum of squared residuals with the optimal paramters
 res[1]
-res_correct_param <- mm_elasticnet(X = X, y = y, is_standardized = TRUE, is_bias_added = TRUE
-              ,max_iter = 30, alpha = res[[1]][2], lambda = res[[1]][3])
+res_correct_param <- mm_elasticnet(X = X, y = y, is_standardized = TRUE,
+                                  max_iter = 30, alpha = res[[1]][2], lambda = res[[1]][3])
