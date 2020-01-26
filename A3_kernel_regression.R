@@ -143,19 +143,3 @@ res_poly <- find_best_param(X = X, y = y, k = 10, seed = 12345, kernel = "poly",
                        lambda = 10^seq(-2, 6, length = 10),d = c(2))
 res_poly$best_stat
 
-####### HIS CODE ###########
-library(dsmle)
-set.seed(12345)
-#his kernel.RBF.sigma = 1/gamma
-ker.cv_rbf <- cv.krr(y.resp, X, kernel.type = "RBF",lambda = 10^seq(-2, 6, length = 10),
-                 center = F,scale = F,kernel.RBF.sigma = 1)
-ker.cv_rbf$lambda.min
-ker.cv_rbf$rmse
-
-ker.cv_lin <- cv.krr(y.resp, X, kernel.type = "linear",lambda = 10^seq(-2, 6, length = 10),
-                 center = F,scale = F)
-ker.cv_lin$lambda.min
-
-ker.cv_poly <- cv.krr(y.resp, X, kernel.type = "nonhompolynom",lambda = 10^seq(-2, 6, length = 10),
-                 center = F,scale = F,kernel.degree = 2)
-ker.cv_poly$lambda.min
