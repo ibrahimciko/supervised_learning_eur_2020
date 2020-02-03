@@ -12,6 +12,6 @@ This code implements various Kernel Ridge regression, with cross-validation.
 
 Code 3:
 A_4_svm_mm.R contains the Support Vector Machine implementation from scratch. Optimization is based on Majorization algorithm
-It can handle non-linear Kernels such as Radial Basis Functions, Non-homogenous Polynomials. Finally it does cross validation and grid search to find optimal parameters. Finally, it also contains the confusion matrix for method diagnostic purposes.
+It can handle non-linear Kernels such as Radial Basis Functions, Non-homogenous Polynomials. It does cross validation and grid search to find optimal parameters. Finally, it also contains the confusion matrix for method diagnostic purposes.
 
 
