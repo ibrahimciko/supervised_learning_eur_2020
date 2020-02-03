@@ -7,8 +7,6 @@ The codes are implemented  based on the course Supervised Learning by Dr. Patric
 A2_mm_cv_Ibrahim.R contains the elastic net regression with a Majorization and Minimization algorithm (MM). Note that for this implementation, the lecture notes of Patrick van Groenen were of great help.
 
 
-2nd implementation: Kernel Ridge Regression - Radial Basis function (RBF) and non homogenous polynomial kernels
---see you after the update--
-
-
-
+2nd implementation: 
+Kernel Ridge Regression - Radial Basis function (RBF) and non homogenous polynomial kernels
+This code implements various Kernel Ridge regression, with cross-validation. 
