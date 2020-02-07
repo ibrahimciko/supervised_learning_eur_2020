@@ -341,9 +341,11 @@ find_best_param <- function(X,y,k = 10,seed = 12345,kernel,sigma = NULL,
 }
 
 k = 5; seed = 12345; kernel ="linear"; sigma = NULL
-lambda = 1:4;d = NULL; standardized = F; max_iter = 100;
-with_bias = T; hinge = "absolute"; epsilon =1e-4
+lambda = 2^seq(5, -5, length.out = 19);d = NULL; standardized = F; max_iter = 100;
+with_bias = T; hinge = "quadratic"; epsilon =1e-4
 
-find_best_param(X,y,k = 5, seed =12345, kernel = "linear",lambda = (1:4),epsilon = 1e-4,
-                standardized = F,with_bias = T,max_iter = 100,hinge = "absolute")
-                
+find_best_param(X,y,k = 5, seed =12345, kernel = "linear", sigma = NULL, d= NULL,
+                lambda = 2^seq(5, -5, length.out = 19),epsilon = 1e-4,
+                standardized = F,with_bias = T,max_iter = 100,hinge = "quadratic")
+library(SVMMaj)      
+svmmajcrossval(X,y,hinge = "absolute",)
