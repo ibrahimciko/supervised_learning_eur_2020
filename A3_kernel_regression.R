@@ -137,7 +137,7 @@ res_rbf$best_stat
 
 res_lin <- find_best_param(X = X, y = y, k = 10, seed = 12345, kernel = "lin",
                       lambda = 10^seq(-2, 6, length = 10))
-res_rbf$best_stat
+res_lin$best_stat
 
 res_poly <- find_best_param(X = X, y = y, k = 10, seed = 12345, kernel = "poly",
                        lambda = 10^seq(-2, 6, length = 10),d = c(2))
